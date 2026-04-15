@@ -1,4 +1,3 @@
-import { AwardIcon } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_BASE_URL; // backend-ի URL
 const token = localStorage.getItem("jwt_token")
@@ -11,7 +10,11 @@ export async function addQuiz(quiz) {
 
       // http://localhost:8181/admin/addQuiz
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+
+      },
       body: JSON.stringify({
         title: quiz.title,
         level: quiz.level,
@@ -35,7 +38,10 @@ export async function updateQuiz(quiz, id) {
   try {
     const response = await fetch(`${API_URL}/admin/update/${id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
       body: JSON.stringify(quiz)
 
     });
@@ -54,7 +60,10 @@ export async function getAllQuizzes() {
   try {
     const response = await fetch(`${API_URL}/admin/getAllQuizzes`, {
       method: "GET",
-      headers: { "Content-Type": "application/json" }
+      headers: {
+        "Content-Type": "application/json",
+
+      }
     });
     const data = await response.json();
     if (!response.ok) {
@@ -73,6 +82,11 @@ export async function deleteQuiz(id) {
   try {
     const response = await fetch(`${API_URL}/admin/delete/${id}`, {
       method: "DELETE",
+      headers: {
+        "Authorization": `Bearer ${token}`
+
+      }
+
     })
     const data = await response.text();
     if (!response.ok) {
@@ -89,18 +103,41 @@ export async function getAllPlayers() {
   try {
     const response = await fetch(`${API_URL}/admin/getAllPlayers`, {
       method: "GET",
-      headers: { "Content-Type": "application/json" }
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      }
     })
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.message);
+    if (response.ok) {
+      return await response.json()
     }
-    return data
+    const errorData = await response.text()
+    console.log(errorData)
+
   } catch (e) {
     throw e;
   }
 
 }
 
+export async function changeScore(player, quizId) {
+  try {
+    const response = await fetch(`${API_URL}/player/updateScore/${quizId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify(player),
+    });
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.log(errorData);
+    }
+    return await response.json();
 
-
+  }
+  catch (err) {
+    throw err;
+  }
+}

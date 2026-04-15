@@ -1,26 +1,61 @@
-import { useState, useEffect, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { useLocation } from "wouter";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Trophy, LayoutGrid, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { Trophy, LayoutGrid, ArrowLeft, LogOut, VolumeX, Volume2 } from "lucide-react";
 import { getAllQuizzes } from "@/lib/storage";
+import { changeScore, getAllPlayers } from "../lib/storage";
+import { useToast } from "@/hooks/use-toast";
+import { logout } from "../lib/auth";
 
-export default function QuizLibrary() {
+
+export default function UserQuizPage() {
+    const [, setLocation] = useLocation();
     const [quizzesList, setQuizzesList] = useState([]);
+    const [playersList, setPlayersList] = useState([]);
     const [selectedQuiz, setSelectedQuiz] = useState(null);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [playerScore, setPlayerScore] = useState(0);
     const [showResult, setShowResult] = useState(false);
     const [isCorrect, setIsCorrect] = useState(null);
-    const [selectedAnswer, setSelectedAnswer] = useState(null);
-    const [lives, setLives] = useState(3)
+    const [selectedAnswer, startwer] = useState(null);
+    const [lives, setLives] = useState(3);
+    const { toast } = useToast();
+    const audioRef = useRef(null);
+    const correctAudioRef = useRef(null);
+    const wrongAudioRef = useRef(null);
+    const [isMuted, setIsMuted] = useState(true);
+    const [player, setPlayer] = useState({ id: 0, userName: "", musicEnabled: true });
 
     useEffect(() => {
+        console.log("Current Players List:", playersList);
+    }, [playersList]);
+    useEffect(() => {
+
         const loadData = async () => {
             const data = await getAllQuizzes();
+            const playersData = await getAllPlayers();
             setQuizzesList(data);
+            setPlayersList(playersData);
+            const savedUser = localStorage.getItem("library_current_user");
+            if (savedUser) {
+                const parsedUser = JSON.parse(savedUser);
+                const currentData = playersData.find(p => p.id === parsedUser.id);
+                setPlayer(currentData || parsedUser);
+            }
         };
+
         loadData();
+
     }, []);
+
+    const currentPlayer = useMemo(() => {
+        return playersList.find(p => p.id === player.id) || player;
+    }, [playersList, player.id]);
+    const sortedQuizzes = useMemo(() => {
+        const levelOrder = { "BEGINNER": 1, "INTERMEDIATE": 2, "ADVANCED": 3 };
+        return [...quizzesList].sort((a, b) => levelOrder[a.level] - levelOrder[b.level]);
+    }, [quizzesList]);
 
     const memoAnswers = useMemo(() => {
         if (!selectedQuiz || !selectedQuiz.question || !selectedQuiz.question[currentQuestionIndex]) {
@@ -33,179 +68,328 @@ export default function QuizLibrary() {
             currentQuestion.wrongAnswer2,
             currentQuestion.wrongAnswer3
         ].filter(Boolean);
+
         return allAnswers.sort(() => Math.random() - 0.5);
     }, [currentQuestionIndex, selectedQuiz]);
 
-    //select Quiz
+
+    const levelStatus = useMemo(() => {
+        const currentPlayer = playersList.find(p => p.id === player.id);
+        const results = currentPlayer?.quizScoreResultList || [];
+
+        const isLevelPassed = (levelName) => {
+            const levelQuizzes = quizzesList.filter(q => q.level === levelName);
+            if (levelQuizzes.length === 0) return false;
+            return levelQuizzes.some(quiz => {
+                const result = results.find(r => r.quiz?.id === quiz.id);
+                return result && (result.bestScore / 10) >= 0.8;
+            });
+        };
+
+        const beginnerPassed = isLevelPassed("BEGINNER");
+        const intermediatePassed = isLevelPassed("INTERMEDIATE");
+
+        return {
+            BEGINNER: true,
+            INTERMEDIATE: beginnerPassed,
+            ADVANCED: beginnerPassed && intermediatePassed
+        };
+    }, [player.id, playersList, quizzesList]);
+
     const startQuiz = (quiz) => {
+        console.log("AudioRef current:", audioRef.current);
+
         setSelectedQuiz(quiz);
         setCurrentQuestionIndex(0);
         setPlayerScore(0);
         setShowResult(false);
-        setSelectedAnswer(null);
-        setIsCorrect(null)
+        startwer(null);
+        setIsCorrect(null);
         setLives(3);
-    };
 
+    }
 
-    //submit answer
     const answerClick = (answer) => {
-
         const currentQuestion = selectedQuiz.question[currentQuestionIndex];
-        setSelectedAnswer(answer)
+        startwer(answer);
         let correct = answer === currentQuestion.correctAnswer;
         setIsCorrect(correct);
         if (correct) {
-            setPlayerScore(prev => prev + 1);
-            setTimeout(() => {
-            nextStep();
-        }, 1000);
-            
-
-        }
-        else {
+            correctAudioRef.current?.play();
+            if (selectedQuiz.level === "BEGINNER") {
+                currentPlayer.current?.play()
+                setPlayerScore(prev => prev + 1);
+            }
+            else if (selectedQuiz.level === "INTERMEDIATE") {
+                setPlayerScore(prev => prev + 2);
+            } else {
+                setPlayerScore(prev => prev + 3);
+            }
+            setTimeout(() => nextStep(), 1000);
+        } else {
+            wrongAudioRef.current?.play()
             setLives(prev => {
                 const newLives = prev - 1;
-                if(newLives <= 0) {
-                    setTimeout(() => setShowResult(true), 1000)
-                }   
-                else {
-                    setTimeout(() => {
-                    nextStep();
-                }, 1000);
-                }
+                if (newLives <= 0) setTimeout(() => setShowResult(true), 1000);
+                else setTimeout(() => nextStep(), 1000);
                 return newLives;
             });
-         
+        }
+    };
 
+    const nextStep = () => {
+        const nextQuestion = currentQuestionIndex + 1;
+        if (nextQuestion < 10) {
+            setCurrentQuestionIndex(nextQuestion);
+            startwer(null);
+            setIsCorrect(null);
+        } else {
+            setShowResult(true);
+        }
+    };
 
+    const HandleChangeScore = async () => {
+        setShowResult(false);
+        const savedUser = JSON.parse(localStorage.getItem("library_current_user"));
 
-
-    };}
-           const nextStep = () => {
-            const nextQuestion = currentQuestionIndex + 1;
-            if (nextQuestion < selectedQuiz.question.length) {
-                setCurrentQuestionIndex(nextQuestion);
-                setSelectedAnswer(null)
-                setIsCorrect(null)
-            } else {
-                setShowResult(true);
+        try {
+            const updatedUser = await changeScore({
+                id: savedUser.id,
+                userName: savedUser.userName,
+                score: playerScore,
+                quizScoreResultList: savedUser.quizScoreResultList
+            }, selectedQuiz.id);
+            if (updatedUser) {
+                localStorage.setItem("library_current_user", JSON.stringify(updatedUser));
+                setPlayer(updatedUser)
+                const playersData = await getAllPlayers();
+                setPlayersList(playersData);
+                toast({ title: "Միավորները թարմացվեցին" });
             }
-        };
 
+        } catch (err) {
+            toast({ title: "Միավորը չպահպանվեց", variant: "destructive" });
+        }
+    };
 
-    //Result
-    if (showResult) {
-        return (
-            <div className="flex items-center justify-center min-h-[60vh]">
-                <Card className="max-w-md w-full text-center p-8 rounded-3xl shadow-2xl border-none">
-                    <Trophy className="w-20 h-20 text-yellow-500 mx-auto mb-4" />
-                    <h2 className="text-3xl font-bold mb-2">Ավարտվեց!</h2>
-                    <p className="text-xl text-slate-600 mb-6">
-                        Ձեր արդյունքը: <span className="font-bold text-indigo-600">{playerScore} / {selectedQuiz.question.length}</span>
-                    </p>
-                    <Button variant="ghost" onClick={() => {
-                        setSelectedQuiz(null);
-                        setShowResult(false);
+    const logOut = async () => {
+        try {
+            await logout();
+            setLocation("/login");
+            window.location.reload();
+        } catch (err) {
+            setLocation("/login");
+        }
+    };
+    const toggleMusic = () => {
+        if (audioRef.current) {
+            if (isMuted) {
+                audioRef.current.play().catch(e => console.log("Error playing:", e));
+                audioRef.current.volume = 0.5;
+            } else {
+                audioRef.current.pause();
+            }
+            setIsMuted(!isMuted);
+        }
+    };
+    return (
+        <>
+            <audio ref={audioRef} src="/bgMusic.mp3" loop />
+            <audio ref={correctAudioRef} src="/right.mp3" />
+            <audio ref={wrongAudioRef} src="/wrong.mp3" />
 
-                    }} className="mb-4">
-                        Վերադառնալ
-                    </Button>
-                </Card>
-            </div>
-        );
-    }
+            {showResult ? (
+                <div className="flex items-center justify-center min-h-[60vh]">
+                    <Card className="max-w-md w-full text-center p-8 rounded-3xl shadow-2xl border-none">
+                        <Trophy className="w-20 h-20 text-yellow-500 mx-auto mb-4" />
 
-    // Game
+                        <h2 className="text-3xl font-bold mb-2">Ավարտվեց!</h2>
 
+                        <p className="text-xl text-slate-600 mb-6">
+                            Ձեր արդյունքը:{" "}
+                            <span className="font-bold text-indigo-600">
+                                {playerScore} / {10}
+                            </span>
+                        </p>
 
-    if (selectedQuiz) {
-        const currentQuestion = selectedQuiz.question[currentQuestionIndex];
-
-
-        return (
-            <div className="max-w-2xl mx-auto p-6 space-y-6">
-                <Button variant="outline" onClick={() => setSelectedQuiz(null)} className="hover:bg-blue-600 ">
-                    <ArrowLeft className="mr-2 w-4 h-4" /> Հետ
-                </Button>
-
-                <Card className="rounded-3xl shadow-xl overflow-hidden border-none">
-                    <CardHeader className="bg-indigo-600 text-white p-8">
-                        <div className="flex justify-between mb-2 opacity-80 text-sm font-medium">
-                            <span>Հարց {currentQuestionIndex + 1} / {selectedQuiz.question.length}</span>
-                            <span className="text-xl"> {"❤️".repeat(lives)}</span>
-                            <span>Միավոր: {playerScore}</span>
-                        </div>
-                        <CardTitle className="text-2xl leading-snug">{currentQuestion.content}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-6 grid grid-cols-1 gap-3">
-                        {memoAnswers.map((answer, index) => {
-                            let buttonClass = "border-2 rounded-2xl transition-all h-16 text-lg justify-start px-6 ";
-
-                            if (selectedAnswer === answer) {
-                                buttonClass += isCorrect
-                                    ? "bg-green-600 border-green-200 text-black font-bold"
-                                    : "bg-red-700 border-red-200 text-black font-bold ";
-                            } else {
-                                buttonClass += "hover:bg-blue-500 hover:border-indigo-500 bg-white text-slate-700";
-                            }
-                            return (
-                                <Button
-                                    key={index}
-                                    variant="outline"
-                                    className={buttonClass}
-                                    onClick={() => !selectedAnswer && answerClick(answer)}
-                                    disabled={!!selectedAnswer}
-                                >
-                                    {answer}
-                                </Button>
-                            )
-                        })
-                        }
-                    </CardContent>
-                </Card>
-            </div>
-
-        );}
-
-
-        // Quiz cards 
-        return (
-            <div className="max-w-7xl mx-auto p-8 space-y-8">
-                <div className="flex flex-col space-y-2">
-                    <h1 className="text-4xl font-extrabold text-slate-900 flex items-center gap-3">
-                        <LayoutGrid className="text-indigo-600" /> Քուիզներ
-                    </h1>
-                    <p className="text-slate-500 text-lg">Ընտրեք թեման և սկսեք խաղալ</p>
+                        <Button
+                            onClick={HandleChangeScore}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-8"
+                        >
+                            Վերադառնալ
+                        </Button>
+                    </Card>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {quizzesList.map((quiz) => (
-                        <Card key={quiz.id} className="group hover:shadow-2xl transition-all duration-300 border-none rounded-3xl overflow-hidden flex flex-col shadow-md">
-                            <CardHeader className="bg-indigo-50 p-6">
-                                <span className="px-3 py-1 rounded-full bg-white text-indigo-600 text-xs font-bold w-fit mb-4 shadow-sm">
-                                    {quiz.level}
+            ) : selectedQuiz ? (
+                <div className="max-w-7xl mx-auto p-8 space-y-6">
+                    {/* HEADER */}
+                    <div className="flex justify-between items-center">
+                        <Button
+                            variant="ghost"
+                            onClick={() => {
+                                if (audioRef.current) {
+                                    audioRef.current.pause();
+                                }
+                                setSelectedQuiz(null);
+                                setShowResult(false);
+                            }}
+                        >
+                            <ArrowLeft className="mr-2 w-4 h-4" /> Հետ
+                        </Button>
+
+                        <div className="flex gap-1">
+                            {[...Array(3)].map((_, i) => (
+                                <span
+                                    key={i}
+                                    className={`text-xl ${i < lives ? "opacity-100" : "opacity-20 grayscale"
+                                        }`}
+                                >
+                                    ❤️
                                 </span>
-                                <CardTitle className="text-2xl font-bold text-slate-800">{quiz.title}</CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-6 flex-grow">
-                                <div className="flex items-center gap-2 text-slate-600">
-                                    <Trophy className="w-4 h-4 text-yellow-500" />
-                                    <span>{quiz.topic}</span>
-                                </div>
-                                <p className="mt-2 text-slate-500 text-sm">Հարցերի քանակը: {quiz.question?.length || 0}</p>
-                            </CardContent>
-                            <CardFooter className="p-6 pt-0">
-                                <Button
-                                    onClick={() => startQuiz(quiz)}
-                                    className="w-full bg-indigo-600 hover:bg-indigo-700 h-12 rounded-xl text-lg font-semibold"
-                                >
-                                    Սկսել
-                                </Button>
-                            </CardFooter>
-                        </Card>
-                    ))}
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* QUIZ CARD */}
+                    <Card className="rounded-3xl shadow-2xl border-none bg-white">
+                        <CardHeader className="bg-indigo-600 text-white p-8">
+                            <div className="flex justify-between mb-4 text-sm">
+                                <span>
+                                    Հարց {currentQuestionIndex + 1} /{" "}
+                                    {10}
+                                </span>
+                                <span>Միավոր: {playerScore}</span>
+                            </div>
+
+                            <CardTitle className="text-xl">
+                                {selectedQuiz.question[currentQuestionIndex].content}
+                            </CardTitle>
+                        </CardHeader>
+
+                        <CardContent className="p-6 space-y-4">
+                            {memoAnswers.map((answer, index) => {
+                                const currentQuestion =
+                                    selectedQuiz.question[currentQuestionIndex];
+
+                                const isThisSelected = selectedAnswer === answer;
+                                const isCorrectAnswer =
+                                    answer === currentQuestion.correctAnswer;
+
+                                let style = "border p-4 rounded-xl w-full text-left ";
+
+                                if (selectedAnswer) {
+                                    if (isCorrectAnswer) {
+                                        style += "bg-green-500 text-white";
+                                    } else if (isThisSelected) {
+                                        style += "bg-red-500 text-white";
+                                    } else {
+                                        style += "opacity-50";
+                                    }
+                                } else {
+                                    style += "hover:bg-gray-100";
+                                }
+
+                                return (
+                                    <button
+                                        key={index}
+                                        className={style}
+                                        disabled={!!selectedAnswer}
+                                        onClick={() => answerClick(answer)}
+                                    >
+                                        {String.fromCharCode(65 + index)}. {answer}
+                                    </button>
+                                );
+                            })}
+                        </CardContent>
+                    </Card>
                 </div>
-            </div>
-        );
-    }
+
+            ) : (
+                <div className="max-w-7xl mx-auto p-6 space-y-8">
+                    <div className="flex justify-between items-center">
+                        <h1 className="text-3xl font-bold">Քուիզներ</h1>
+
+                        <div className="flex gap-8 ">
+
+                            <div className="flex items-center gap-2 bg-yellow-50 px-4  rounded-xl">
+                                <span className="text-lg">🏆</span>
+                                <span className="font-bold text-slate-800">{player.score}</span>
+                            </div>
+                            <Button onClick={toggleMusic}>
+                                {isMuted ? <VolumeX /> : <Volume2 />}
+                            </Button>
+
+                            <Button onClick={logOut}>
+                                <LogOut className="h-4 w-4 mr-2" /> Դուրս գալ
+                            </Button>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {sortedQuizzes.map((quiz) => {
+                            const isLocked = !levelStatus[quiz.level];
+
+                            const quizResult = currentPlayer?.quizScoreResultList?.find(
+                                r => r.quiz?.id === quiz.id
+                            );
+
+                            const bestScore = quizResult ? quizResult.bestScore : 0;
+
+                            const scorePerQ =
+                                quiz.level === "BEGINNER" ? 1 :
+                                    quiz.level === "INTERMEDIATE" ? 2 : 3;
+
+                            const maxScore = (10 || 0) * scorePerQ;
+
+                            return (
+                                <div
+                                    key={quiz.id}
+                                    className={`rounded-3xl shadow-md overflow-hidden transition-all 
+        ${isLocked ? "opacity-70 grayscale" : "hover:shadow-xl"}`}
+                                >
+                                    {/* HEADER */}
+                                    <div className="bg-indigo-100 p-5 relative">
+                                        <span className="text-xs font-bold bg-white px-3 py-1 rounded-full text-indigo-600">
+                                            {quiz.level}
+                                        </span>
+
+                                        <h2 className="text-xl font-bold mt-3 text-slate-800">
+                                            {quiz.title}
+                                        </h2>
+                                    </div>
+
+                                    {/* BODY */}
+                                    <div className="p-5 space-y-3">
+                                        <div className="flex items-center gap-2 text-slate-600">
+                                            🏆 <span>{quiz.topic}</span>
+                                        </div>
+
+                                        <div className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-lg text-sm font-semibold w-fit">
+                                            ✔ Լավագույնը: {bestScore} / {maxScore}
+                                        </div>
+                                    </div>
+
+                                    {/* FOOTER */}
+                                    <div className="p-5 pt-0">
+                                        <button
+                                            disabled={isLocked}
+                                            onClick={() => startQuiz(quiz)}
+                                            className={`w-full py-3 rounded-xl font-semibold text-white transition
+              ${isLocked
+                                                    ? "bg-gray-300 cursor-not-allowed"
+                                                    : "bg-indigo-600 hover:bg-indigo-700"}
+            `}
+                                        >
+                                            {isLocked ? "Կողպված է" : "Սկսել"}
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+        </>
+    );
+}
