@@ -135,7 +135,7 @@ export default function AdminPage() {
             setQuiz(initialState);
             await loadQuizzes()
 
-        } catch (error) {
+        } catch (error) {ադ
             toast({
                 title: "Սխալ",
                 description: "Չհաջողվեց պահպանել քուիզը",
