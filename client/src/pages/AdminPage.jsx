@@ -1,17 +1,18 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogTrigger, DialogDescription, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, HelpCircle, GraduationCap } from "lucide-react";
+import { Plus, HelpCircle, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { addQuiz, updateQuiz, getAllQuizzes, deleteQuiz, getAllPlayers } from "@/lib/storage";
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { logout } from "../lib/auth";
 
 const initialState = {
     title: "",
@@ -27,7 +28,7 @@ const initialState = {
 
 };
 export default function AdminPage() {
-
+    const [, setLocation] = useLocation();
     const [quizzesList, setQuizzesList] = useState([]);
     const [playersList, setPlayersList] = useState([])
     const [isQuizOpen, setIsQuizOpen] = useState(false);
@@ -134,7 +135,7 @@ export default function AdminPage() {
             setQuiz(initialState);
             await loadQuizzes()
 
-        } catch (error) {
+        } catch (error) {ադ
             toast({
                 title: "Սխալ",
                 description: "Չհաջողվեց պահպանել քուիզը",
@@ -175,13 +176,48 @@ export default function AdminPage() {
         }
     }
 
+    const logOut = async (e) => {
+        try {
+            await logout()
+            setLocation("/login")
+            window.location.reload();
+            toast({
+                description: "Դուք հաջողությամբ դուրս եք եկել"
+            })
+
+        }
+        catch (err) {
+            await logout()
+            setLocation("/login")
+            toast({
+                title: "Ձախողվեց",
+                variant: "destructive"
+            })
+        }
+    }
+
 
     return (
+
+
         <div className="flex items-center justify-center min-h-screen bg-slate-50 p-6 md:p-10 font-sans">
+
             <Card className="w-full max-w-6xl shadow-2xl border-none rounded-3xl overflow-hidden bg-white">
-                <CardHeader className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 text-white p-8">
-                    <CardTitle className="text-3xl font-bold text-center">Ադմինիստրատորի Վահանակ</CardTitle>
+
+                <CardHeader className="bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 text-white p-8 flex flex-row items-center justify-between border-b border-white/10">
+                    <div>
+                        <CardTitle className="text-2xl font-bold tracking-tight">Ադմինի էջ</CardTitle>
+                    </div>
+                    <Button
+                        variant="ghost"
+                        onClick={logOut}
+                        className="text-white/80 hover:text-white hover:bg-white/10 border border-white/10 backdrop-blur-md rounded-xl"
+                    >
+                        <LogOut className="h-4 w-4 mr-2" />
+                        Դուրս գալ
+                    </Button>
                 </CardHeader>
+
                 <CardContent className="p-6">
                     <Tabs defaultValue="quizzes" className="w-full">
                         <TabsList className="grid w-full grid-cols-2 mb-8">
@@ -370,7 +406,11 @@ export default function AdminPage() {
                         <TabsContent value="players">
                             <Table >
                                 <TableHeader className="bg-slate-50">
-                                    <TableHead>Անուն</TableHead>
+                                    <TableHead>
+                                        <tr>
+                                            <th>Անուն</th>
+                                        </tr>
+                                    </TableHead>
                                     <TableHead>Էլ․հասցե</TableHead>
                                     <TableHead>Միավոր</TableHead>
 
