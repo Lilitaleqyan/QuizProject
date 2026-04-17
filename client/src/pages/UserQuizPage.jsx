@@ -40,7 +40,7 @@ export default function UserQuizPage() {
             const savedUser = localStorage.getItem("library_current_user");
             if (savedUser) {
                 const parsedUser = JSON.parse(savedUser);
-                const currentData = playersData.find(p => p.id === parsedUser.id);
+                const currentData = playersData?.find(p => p.id === parsedUser.id);
                 setPlayer(currentData || parsedUser);
             }
         };
@@ -50,7 +50,7 @@ export default function UserQuizPage() {
     }, []);
 
     const currentPlayer = useMemo(() => {
-        return playersList.find(p => p.id === player.id) || player;
+        return playersList?.find(p => p.id === player.id) || player;
     }, [playersList, player.id]);
     const sortedQuizzes = useMemo(() => {
         const levelOrder = { "BEGINNER": 1, "INTERMEDIATE": 2, "ADVANCED": 3 };
@@ -74,14 +74,14 @@ export default function UserQuizPage() {
 
 
     const levelStatus = useMemo(() => {
-        const currentPlayer = playersList.find(p => p.id === player.id);
+        const currentPlayer = playersList?.find(p => p.id === player.id);
         const results = currentPlayer?.quizScoreResultList || [];
 
         const isLevelPassed = (levelName) => {
             const levelQuizzes = quizzesList.filter(q => q.level === levelName);
             if (levelQuizzes.length === 0) return false;
-            return levelQuizzes.some(quiz => {
-                const result = results.find(r => r.quiz?.id === quiz.id);
+            return levelQuizzes.every(quiz => {
+                const result = results.find(r => r.quiz === quiz.title);
                 return result && (result.bestScore / 10) >= 0.8;
             });
         };
@@ -164,6 +164,7 @@ export default function UserQuizPage() {
                 setPlayer(updatedUser)
                 const playersData = await getAllPlayers();
                 setPlayersList(playersData);
+                setSelectedQuiz(null)
                 toast({ title: "Միավորները թարմացվեցին" });
             }
 
@@ -331,7 +332,7 @@ export default function UserQuizPage() {
                             const isLocked = !levelStatus[quiz.level];
 
                             const quizResult = currentPlayer?.quizScoreResultList?.find(
-                                r => r.quiz?.id === quiz.id
+                                r => r.quiz === quiz.title
                             );
 
                             const bestScore = quizResult ? quizResult.bestScore : 0;
