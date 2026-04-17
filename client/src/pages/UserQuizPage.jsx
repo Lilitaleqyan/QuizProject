@@ -7,6 +7,7 @@ import { getAllQuizzes } from "@/lib/storage";
 import { changeScore, getAllPlayers } from "../lib/storage";
 import { useToast } from "@/hooks/use-toast";
 import { logout } from "../lib/auth";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 
 export default function UserQuizPage() {
@@ -147,6 +148,16 @@ export default function UserQuizPage() {
             setShowResult(true);
         }
     };
+
+    const prevStep = () => {
+        const prevQuestion = currentQuestionIndex - 1;
+        if (prevQuestion > 0) {
+            setCurrentQuestionIndex(prevQuestion);
+            startwer(null)
+            setIsCorrect(null)
+        }
+
+    }
 
     const HandleChangeScore = async () => {
         setShowResult(false);
@@ -303,6 +314,24 @@ export default function UserQuizPage() {
                                 );
                             })}
                         </CardContent>
+                        <div className="flex justify-between pt-6 mt-4 border-t border-slate-100">
+                            <Button
+                                variant="outline"
+                                onClick={prevStep}
+                                disabled={currentQuestionIndex === 0 || !!selectedAnswer}
+                                className="rounded-xl px-6 bg-slate-50 hover:bg-gray-500"
+                            >
+                                <ChevronLeft className="mr-2 h-4 w-4" /> Նախորդ
+                            </Button>
+
+                            <Button
+                                variant="outline"
+                                onClick={nextStep}
+                                className="rounded-xl px-6 bg-slate-50 hover:bg-gray-500"
+                            >
+                                Հաջորդ <ChevronRight className="ml-2 h-4 w-4" />
+                            </Button>
+                        </div>
                     </Card>
                 </div>
 
