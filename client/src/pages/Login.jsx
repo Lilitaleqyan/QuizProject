@@ -43,7 +43,6 @@ export default function Login() {
                     setLocation("/user")
                 }
                 window.location.reload();
-                console.log(user.role)
             } else {
                 toast({
                     title: "Մուտքի սխալ",
@@ -110,12 +109,17 @@ export default function Login() {
 
                                     {[
                                         { name: "userName", placeholder: "Օգտանուն" },
-                                        { name: "email", placeholder: "Email", type: "email" },
-                                        { name: "password", placeholder: "Գաղտնաբառ", type: "password" }
+                                        { name: "email", placeholder: "Email", type: "email", pattern: "^[^\s@]+@[^\s@]+\.[^\s@]+$" },
+                                        // { name: "password", placeholder: "Գաղտնաբառ", type: showPassword ? "text" : "password", pattern: "^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$" }
+
+
+
                                     ].map(({ name, placeholder, type = "text" }) => (
                                         <input
                                             key={name}
-                                            type={type}
+                                            type={type
+
+                                            }
                                             name={name}
                                             value={formData[name]}
                                             onChange={handleChange}
@@ -125,6 +129,26 @@ export default function Login() {
                                                          focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         />
                                     ))}
+                                    <div className="relative">
+                                        <input
+                                            pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$"
+                                            type={showPassword ? "text" : "password"}
+                                            name="password"
+                                            value={formData.password}
+                                            onChange={handleChange}
+                                            placeholder="Գաղտնաբառ"
+                                            required
+                                            className="w-full px-4 py-2 bg-gray-100 border rounded-lg"
+                                        />
+
+                                        <button
+                                            type="button"
+                                            className="absolute right-2 top-1/2 -translate-y-1/2"
+                                            onClick={() => setShowPassword(prev => !prev)}
+                                        >
+                                            {showPassword ? <EyeOff /> : <Eye />}
+                                        </button>
+                                    </div>
                                     <button
                                         type="submit"
                                         className="w-full bg-blue-600 text-white py-2 rounded-lg
@@ -193,6 +217,7 @@ export default function Login() {
                                 </form>
                             </>
                         )}
+                        
                     </CardContent>
                 </Card>
             </div>
