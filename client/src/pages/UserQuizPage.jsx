@@ -29,7 +29,6 @@ export default function UserQuizPage() {
     const [player, setPlayer] = useState({ id: 0, userName: "", musicEnabled: true });
 
     useEffect(() => {
-        console.log("Current Players List:", playersList);
     }, [playersList]);
     useEffect(() => {
 
@@ -98,8 +97,6 @@ export default function UserQuizPage() {
     }, [player.id, playersList, quizzesList]);
 
     const startQuiz = (quiz) => {
-        console.log("AudioRef current:", audioRef.current);
-
         setSelectedQuiz(quiz);
         setCurrentQuestionIndex(0);
         setPlayerScore(0);
@@ -196,7 +193,6 @@ export default function UserQuizPage() {
     const toggleMusic = () => {
         if (audioRef.current) {
             if (isMuted) {
-                audioRef.current.play().catch(e => console.log("Error playing:", e));
                 audioRef.current.volume = 0.5;
             } else {
                 audioRef.current.pause();
@@ -235,7 +231,6 @@ export default function UserQuizPage() {
 
             ) : selectedQuiz ? (
                 <div className="max-w-7xl mx-auto p-8 space-y-6">
-                    {/* HEADER */}
                     <div className="flex justify-between items-center">
                         <Button
                             variant="ghost"
@@ -263,7 +258,6 @@ export default function UserQuizPage() {
                         </div>
                     </div>
 
-                    {/* QUIZ CARD */}
                     <Card className="rounded-3xl shadow-2xl border-none bg-white">
                         <CardHeader className="bg-indigo-600 text-white p-8">
                             <div className="flex justify-between mb-4 text-sm">
@@ -376,9 +370,8 @@ export default function UserQuizPage() {
                                 <div
                                     key={quiz.id}
                                     className={`rounded-3xl shadow-md overflow-hidden transition-all 
-        ${isLocked ? "opacity-70 grayscale" : "hover:shadow-xl"}`}
+                                      ${isLocked ? "opacity-70 grayscale" : "hover:shadow-xl"}`}
                                 >
-                                    {/* HEADER */}
                                     <div className="bg-indigo-100 p-5 relative">
                                         <span className="text-xs font-bold bg-white px-3 py-1 rounded-full text-indigo-600">
                                             {quiz.level}
@@ -389,7 +382,6 @@ export default function UserQuizPage() {
                                         </h2>
                                     </div>
 
-                                    {/* BODY */}
                                     <div className="p-5 space-y-3">
                                         <div className="flex items-center gap-2 text-slate-600">
                                             🏆 <span>{quiz.topic}</span>
@@ -405,8 +397,8 @@ export default function UserQuizPage() {
                                         <button
                                             disabled={isLocked}
                                             onClick={() => startQuiz(quiz)}
-                                            className={`w-full py-3 rounded-xl font-semibold text-white transition
-              ${isLocked
+                                            className={`w-full py-3 rounded-xl font-semibold text-white transition 
+                                                ${isLocked
                                                     ? "bg-gray-300 cursor-not-allowed"
                                                     : "bg-indigo-600 hover:bg-indigo-700"}
             `}
