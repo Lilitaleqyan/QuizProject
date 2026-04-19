@@ -7,10 +7,19 @@ import UserQuizPage from "./pages/UserQuizPage";
 import AdminPage from "./pages/AdminPage";
 import Login from "./pages/Login"
 import { Switch, Route, Redirect } from "wouter";
+import { getAllQuizzes } from "./lib/storage";
 
 function Router() {
   const token = localStorage.getItem("jwt_token");
   const user = JSON.parse(localStorage.getItem("library_current_user") || "{}");
+
+  useEffect(() => {
+    const path = window.location.pathname;
+    if (path === "/admin") document.title = "Admin page";
+    else if (path === "/user") document.title = "Player page";
+    else if (path === "/login") document.title = "Login/Registration";
+  }, [window.location.pathname]); 
+
   return (
     <Switch>
       <Route path="/" >
@@ -44,8 +53,8 @@ function Router() {
 }
 function App() {
   useEffect(() => {
-    // initializeBooks();
-  }, []);
+    getAllQuizzes()
+    }, []);
 
 
 
