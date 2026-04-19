@@ -45,7 +45,6 @@ export default function UserQuizPage() {
                 setPlayer(currentData || parsedUser);
             }
         };
-
         loadData();
 
     }, []);
@@ -235,7 +234,6 @@ export default function UserQuizPage() {
 
             ) : selectedQuiz ? (
                 <div className="max-w-7xl mx-auto p-8 space-y-6">
-                    {/* HEADER */}
                     <div className="flex justify-between items-center">
                         <Button
                             variant="ghost"
@@ -263,7 +261,6 @@ export default function UserQuizPage() {
                         </div>
                     </div>
 
-                    {/* QUIZ CARD */}
                     <Card className="rounded-3xl shadow-2xl border-none bg-white">
                         <CardHeader className="bg-indigo-600 text-white p-8">
                             <div className="flex justify-between mb-4 text-sm">
@@ -389,7 +386,6 @@ export default function UserQuizPage() {
                                         </h2>
                                     </div>
 
-                                    {/* BODY */}
                                     <div className="p-5 space-y-3">
                                         <div className="flex items-center gap-2 text-slate-600">
                                             🏆 <span>{quiz.topic}</span>
@@ -400,7 +396,6 @@ export default function UserQuizPage() {
                                         </div>
                                     </div>
 
-                                    {/* FOOTER */}
                                     <div className="p-5 pt-0">
                                         <button
                                             disabled={isLocked}
