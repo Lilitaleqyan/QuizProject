@@ -53,7 +53,7 @@ function Router() {
 }
 function App() {
   useEffect(() => {
-    getAllQuizzes()
+    
     }, []);
 
 

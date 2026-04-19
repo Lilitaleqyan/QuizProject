@@ -1,6 +1,7 @@
 
 const API_URL = import.meta.env.VITE_API_BASE_URL; // backend-ի URL
 const token = localStorage.getItem("jwt_token")
+console.log(API_URL)
 
 export async function addQuiz(quiz) {
   try {
@@ -104,7 +105,7 @@ export async function deleteQuestion(id) {
     const response = await fetch(`${API_URL}/admin/deleteQuestion/${id}`, {
       method:"DELETE",
       headers: {
-          "Authorizationf": `Bearer ${token}`
+          "Authorization": `Bearer ${token}`
       }
     })
         const data = await response.text();

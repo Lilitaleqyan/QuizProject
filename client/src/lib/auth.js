@@ -23,7 +23,7 @@ export async function registration(player) {
     body: JSON.stringify(player),
   })
   if (!response.ok) {
-    const errorMessage = "Registration failed";
+    let errorMessage = "Registration failed";
     try {
       const errorData = await response.json();
       errorMessage = errorData.message || errorMessage;
