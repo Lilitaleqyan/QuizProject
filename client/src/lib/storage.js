@@ -99,6 +99,26 @@ export async function deleteQuiz(id) {
   }
 }
 
+export async function deleteQuestion(id) {
+  try {
+    const response = await fetch(`${API_URL}/admin/deleteQuestion/${id}`, {
+      method:"DELETE",
+      headers: {
+          "Authorizationf": `Bearer ${token}`
+      }
+    })
+        const data = await response.text();
+    if (!response.ok) {
+      throw new Error(data || "Failed to delete quiz")
+    }
+
+    return data;
+  } catch (error) {
+    throw error;
+
+  }
+}
+
 export async function getAllPlayers() {
   try {
     const response = await fetch(`${API_URL}/admin/getAllPlayers`, {

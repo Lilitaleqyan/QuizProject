@@ -4,11 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogTrigger, DialogDescription, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogDescription, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, HelpCircle, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { addQuiz, updateQuiz, getAllQuizzes, deleteQuiz, getAllPlayers } from "@/lib/storage";
+import { addQuiz, updateQuiz, getAllQuizzes, deleteQuiz, getAllPlayers, deleteQuestion } from "@/lib/storage";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -98,12 +98,39 @@ export default function AdminPage() {
         }));
     };
 
-    const removeQuestionField = (index) => {
-        if (quiz.question.length > 1) {
+    const removeQuestionField = async (index) => {
+        if (!window.confirm("Վստահ եք, որ ուզում եք ջնջել այս հարցը՞")) return;
+
+        const questionToRemove = quiz.question[index];
+
+        try {
+            if (questionToRemove.id) {
+                await deleteQuestion(questionToRemove.id);
+            }
+
             const updatedQuestions = quiz.question.filter((_, i) => i !== index);
-            setQuiz(prev => ({ ...prev, question: updatedQuestions }));
+
+            const updatedQuiz = {
+                ...quiz,
+                question: updatedQuestions
+            };
+
+            setQuiz(updatedQuiz);
+
+            toast({
+                title: "Ջնջված է",
+                description: "Հարցը հաջողությամբ հեռացվեց"
+            });
+
+        } catch (err) {
+            toast({
+                title: "Սխալ",
+                description: "Չհաջողվեց ջնջել",
+                variant: "destructive"
+            });
         }
     };
+
 
     const addQuizes = async (e) => {
         if (e) e.preventDefault();
@@ -135,7 +162,8 @@ export default function AdminPage() {
             setQuiz(initialState);
             await loadQuizzes()
 
-        } catch (error) {ադ
+        } catch (error) {
+
             toast({
                 title: "Սխալ",
                 description: "Չհաջողվեց պահպանել քուիզը",
@@ -275,24 +303,6 @@ export default function AdminPage() {
                                                     </Select>
                                                 </div>
 
-                                                {/* 
-                                            <div className="space-y-2">
-                                                <Label>Հարցի բովանդակությունը</Label>
-                                                <Textarea 
-                                                    value={quiz.question[0].content} 
-                                                    onChange={(e) => handleQuestionDetailChange("content", e.target.value)} 
-                                                    required 
-                                                />
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                <Label>Ճիշտ պատասխանը</Label>
-                                                <Input 
-                                                    value={quiz.question[0].correctAnswer} 
-                                                    onChange={(e) => handleQuestionDetailChange("correctAnswer", e.target.value)} 
-                                                    required 
-                                                />
-                                            </div> */}
                                                 <div className="space-y-4 border-t pt-4">
                                                     <div className="flex justify-between items-center">
                                                         <Label className="text-lg font-bold">Հարցեր</Label>
