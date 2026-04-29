@@ -117,14 +117,12 @@ export default function Login() {
                                     ].map(({ name, placeholder, type = "text" }) => (
                                         <input
                                             key={name}
-                                            type={type
-
-                                            }
+                                            type={type}
                                             name={name}
                                             value={formData[name]}
                                             onChange={handleChange}
                                             placeholder={placeholder}
-                                            required={name !== "phone"}
+                                            required
                                             className="w-full px-4 py-2 bg-gray-100 border rounded-lg
                                                          focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         />
@@ -140,13 +138,9 @@ export default function Login() {
                                             required
                                             className="w-full px-4 py-2 bg-gray-100 border rounded-lg"
                                         />
+                                        <button className="absolute right-2 top-1/2 -translate-y-1/2" type="button" onClick={() => setShowPassword(!showPassword)}>
 
-                                        <button
-                                            type="button"
-                                            className="absolute right-2 top-1/2 -translate-y-1/2"
-                                            onClick={() => setShowPassword(prev => !prev)}
-                                        >
-                                            {showPassword ? <EyeOff /> : <Eye />}
+                                            {showPassword ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                                         </button>
                                     </div>
                                     <button
@@ -179,32 +173,31 @@ export default function Login() {
                                             autoComplete="off"
                                             value={formData.userName}
                                             onChange={(e) => setFormData({ ...formData, userName: e.target.value })}
+                                            className="w-full px-4 py-2 bg-gray-100 border rounded-lg "
+
                                             required
                                         />
                                     </div>
 
-                                    <div>
+
+                                    <div className="relative">
                                         <Label htmlFor="password" className="mb-2 block">Գաղտնաբառ</Label>
-                                        <div className="relative">
-                                            <Input
-                                                id="password"
-                                                type={showPassword ? "text" : "password"}
-                                                value={formData.password}
-                                                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                                placeholder="••••••••"
-                                                required
-                                            />
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="sm"
-                                                className="absolute right-2 top-1/2 -translate-y-1/2"
-                                                onClick={() => setShowPassword(!showPassword)}
-                                            >
-                                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                            </Button>
-                                        </div>
+
+                                        <input
+                                            type={showPassword ? "text" : "password"}
+                                            name="password"
+                                            id="password"
+                                            value={formData.password}
+                                            onChange={handleChange}
+                                            required
+                                            className="w-full px-4 py-2 bg-gray-100 border rounded-lg "
+                                        />
+                                        <button className="absolute right-2 top-1/2 -translate-y-1/2" type="button" onClick={() => setShowPassword(!showPassword)}>
+
+                                            {showPassword ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                                        </button>
                                     </div>
+
 
 
                                     <Button type="submit" className="w-full">
@@ -217,11 +210,11 @@ export default function Login() {
                                 </form>
                             </>
                         )}
-                        
+
                     </CardContent>
                 </Card>
             </div>
 
-        </div>
+        </div >
     )
 }

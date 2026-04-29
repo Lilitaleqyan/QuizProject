@@ -157,9 +157,7 @@ export async function logout() {
   try {
   await fetch(`${API_URL}/api/auth/log_out`, {
     method: "POST",
-    headers: {
-      "Authorization": `Bearer ${token}`
-    },
+
     credentials: "include"
   });}
   catch(err) {

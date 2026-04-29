@@ -4,11 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Trophy, LayoutGrid, ArrowLeft, LogOut, VolumeX, Volume2 } from "lucide-react";
 import { getAllQuizzes } from "@/lib/storage";
-import { changeScore, getAllPlayers } from "../lib/storage";
+import { changeScore, getPlayerById } from "../lib/storage";
 import { useToast } from "@/hooks/use-toast";
 import { logout } from "../lib/auth";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-
 
 export default function UserQuizPage() {
     const [, setLocation] = useLocation();
@@ -26,32 +25,34 @@ export default function UserQuizPage() {
     const correctAudioRef = useRef(null);
     const wrongAudioRef = useRef(null);
     const [isMuted, setIsMuted] = useState(true);
-    const [player, setPlayer] = useState({ id: 0, userName: "", musicEnabled: true });
+    const [player, setPlayer] = useState({ id: 0, userName: "", musicEnabled: true, score: 0, quizScoreResultList: [] });
+
+
 
     useEffect(() => {
-        console.log("Current Players List:", playersList);
-    }, [playersList]);
-    useEffect(() => {
-
         const loadData = async () => {
-            const data = await getAllQuizzes();
-            const playersData = await getAllPlayers();
-            setQuizzesList(data);
-            setPlayersList(playersData);
             const savedUser = localStorage.getItem("library_current_user");
             if (savedUser) {
-                const parsedUser = JSON.parse(savedUser);
-                const currentData = playersData?.find(p => p.id === parsedUser.id);
-                setPlayer(currentData || parsedUser);
+                try {
+                    const parsedUser = JSON.parse(savedUser);
+                    if (parsedUser.id) {
+                        const currentData = await getPlayerById(parsedUser.id)
+                        setPlayer(currentData);
+                        console.log("Թարմացված յուզերը բազայից:", currentData);
+
+
+                    }
+                } catch (e) {
+                    throw e
+                }
             }
+            const data = await getAllQuizzes();
+            setQuizzesList(data);
         };
         loadData();
 
     }, []);
 
-    const currentPlayer = useMemo(() => {
-        return playersList?.find(p => p.id === player.id) || player;
-    }, [playersList, player.id]);
     const sortedQuizzes = useMemo(() => {
         const levelOrder = { "BEGINNER": 1, "INTERMEDIATE": 2, "ADVANCED": 3 };
         return [...quizzesList].sort((a, b) => levelOrder[a.level] - levelOrder[b.level]);
@@ -62,20 +63,15 @@ export default function UserQuizPage() {
             return [];
         }
         const currentQuestion = selectedQuiz.question[currentQuestionIndex];
-        const allAnswers = [
-            currentQuestion.correctAnswer,
-            currentQuestion.wrongAnswer1,
-            currentQuestion.wrongAnswer2,
-            currentQuestion.wrongAnswer3
-        ].filter(Boolean);
+        const answers = currentQuestion.optionAnswerSet?.map(o => o.text)
+            .filter(Boolean);
 
-        return allAnswers.sort(() => Math.random() - 0.5);
+        return answers.sort(() => Math.random() - 0.5);
     }, [currentQuestionIndex, selectedQuiz]);
 
 
     const levelStatus = useMemo(() => {
-        const currentPlayer = playersList?.find(p => p.id === player.id);
-        const results = currentPlayer?.quizScoreResultList || [];
+        const results = player?.quizScoreResultList || [];
 
         const isLevelPassed = (levelName) => {
             const levelQuizzes = quizzesList.filter(q => q.level === levelName);
@@ -94,7 +90,7 @@ export default function UserQuizPage() {
             INTERMEDIATE: beginnerPassed,
             ADVANCED: beginnerPassed && intermediatePassed
         };
-    }, [player.id, playersList, quizzesList]);
+    }, [player, quizzesList]);
 
     const startQuiz = (quiz) => {
         console.log("AudioRef current:", audioRef.current);
@@ -112,12 +108,12 @@ export default function UserQuizPage() {
     const answerClick = (answer) => {
         const currentQuestion = selectedQuiz.question[currentQuestionIndex];
         startwer(answer);
-        let correct = answer === currentQuestion.correctAnswer;
+        let isCorrect = currentQuestion.optionAnswerSet?.find(o => o.correct === true)?.text;
+        let correct = answer === isCorrect;
         setIsCorrect(correct);
         if (correct) {
             correctAudioRef.current?.play();
             if (selectedQuiz.level === "BEGINNER") {
-                currentPlayer.current?.play()
                 setPlayerScore(prev => prev + 1);
             }
             else if (selectedQuiz.level === "INTERMEDIATE") {
@@ -158,22 +154,22 @@ export default function UserQuizPage() {
 
     }
 
+
     const HandleChangeScore = async () => {
         setShowResult(false);
         const savedUser = JSON.parse(localStorage.getItem("library_current_user"));
 
         try {
             const updatedUser = await changeScore({
-                id: savedUser.id,
-                userName: savedUser.userName,
+                id: player.id,
+                userName: player.userName,
                 score: playerScore,
-                quizScoreResultList: savedUser.quizScoreResultList
+                quizScoreResultList: player.quizScoreResultList
             }, selectedQuiz.id);
             if (updatedUser) {
                 localStorage.setItem("library_current_user", JSON.stringify(updatedUser));
                 setPlayer(updatedUser)
-                const playersData = await getAllPlayers();
-                setPlayersList(playersData);
+
                 setSelectedQuiz(null)
                 toast({ title: "Միավորները թարմացվեցին" });
             }
@@ -224,7 +220,11 @@ export default function UserQuizPage() {
                         </p>
 
                         <Button
-                            onClick={HandleChangeScore}
+                            onClick={() => {
+                                HandleChangeScore()
+
+                                setSelectedQuiz(null)
+                            }}
                             className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-8"
                         >
                             Վերադառնալ
@@ -272,7 +272,9 @@ export default function UserQuizPage() {
                             </div>
 
                             <CardTitle className="text-xl">
-                                {selectedQuiz.question[currentQuestionIndex].content}
+                                {currentQuestionIndex >= selectedQuiz?.question?.length ? setShowResult(true) :
+
+                                    selectedQuiz.question[currentQuestionIndex].content}
                             </CardTitle>
                         </CardHeader>
 
@@ -282,9 +284,11 @@ export default function UserQuizPage() {
                                     selectedQuiz.question[currentQuestionIndex];
 
                                 const isThisSelected = selectedAnswer === answer;
-                                const isCorrectAnswer =
-                                    answer === currentQuestion.correctAnswer;
+                                const correctAnswer = currentQuestion.optionAnswerSet
+                                    ?.find(opt => opt.correct === true)
+                                    ?.text;
 
+                                const isCorrectAnswer = answer === correctAnswer;
                                 let style = "border p-4 rounded-xl w-full text-left ";
 
                                 if (selectedAnswer) {
@@ -357,7 +361,7 @@ export default function UserQuizPage() {
                         {sortedQuizzes.map((quiz) => {
                             const isLocked = !levelStatus[quiz.level];
 
-                            const quizResult = currentPlayer?.quizScoreResultList?.find(
+                            const quizResult = player?.quizScoreResultList?.find(
                                 r => r.quiz === quiz.title
                             );
 
@@ -375,7 +379,6 @@ export default function UserQuizPage() {
                                     className={`rounded-3xl shadow-md overflow-hidden transition-all 
         ${isLocked ? "opacity-70 grayscale" : "hover:shadow-xl"}`}
                                 >
-                                    {/* HEADER */}
                                     <div className="bg-indigo-100 p-5 relative">
                                         <span className="text-xs font-bold bg-white px-3 py-1 rounded-full text-indigo-600">
                                             {quiz.level}

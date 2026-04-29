@@ -8,14 +8,11 @@ export async function addQuiz(quiz) {
 
     console.log(`${API_URL}/admin/addQuiz`)
     const response = await fetch(`${API_URL}/admin/addQuiz`, {
-
-      // http://localhost:8181/admin/addQuiz
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-
       },
+      credentials: "include",
       body: JSON.stringify({
         title: quiz.title,
         level: quiz.level,
@@ -41,8 +38,8 @@ export async function updateQuiz(quiz, id) {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
       },
+      credentials: "include",
       body: JSON.stringify(quiz)
 
     });
@@ -64,7 +61,8 @@ export async function getAllQuizzes() {
       headers: {
         "Content-Type": "application/json",
 
-      }
+      },
+      credentials: "include"
     });
     const data = await response.json();
     if (!response.ok) {
@@ -83,10 +81,7 @@ export async function deleteQuiz(id) {
   try {
     const response = await fetch(`${API_URL}/admin/delete/${id}`, {
       method: "DELETE",
-      headers: {
-        "Authorization": `Bearer ${token}`
-
-      }
+      credentials: "include"
 
     })
     const data = await response.text();
@@ -103,12 +98,10 @@ export async function deleteQuiz(id) {
 export async function deleteQuestion(id) {
   try {
     const response = await fetch(`${API_URL}/admin/deleteQuestion/${id}`, {
-      method:"DELETE",
-      headers: {
-          "Authorization": `Bearer ${token}`
-      }
+      method: "DELETE",
+      credentials: "include"
     })
-        const data = await response.text();
+    const data = await response.text();
     if (!response.ok) {
       throw new Error(data || "Failed to delete quiz")
     }
@@ -126,8 +119,8 @@ export async function getAllPlayers() {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-      }
+      },
+      credentials: "include"
     })
     if (response.ok) {
       return await response.json()
@@ -141,14 +134,30 @@ export async function getAllPlayers() {
 
 }
 
+export async function getPlayerById(id) {
+  try {
+    let response = await fetch(`${API_URL}/player/getPlayerById/${id}`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include"
+    })
+    if (response.ok) {
+      return await response.json()
+    }
+  }
+  catch (e) {
+    throw e;
+  }
+}
+
 export async function changeScore(player, quizId) {
   try {
     const response = await fetch(`${API_URL}/player/updateScore/${quizId}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
       },
+      credentials: "include",
       body: JSON.stringify(player),
     });
     if (!response.ok) {

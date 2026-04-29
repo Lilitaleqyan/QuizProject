@@ -14,17 +14,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { logout } from "../lib/auth";
 
+const createEmptyQuestion = () => ({
+    content: "",
+    optionAnswerSet: Array.from({ length: 4 }, () => ({
+        text: "",
+        correct: false
+    }))
+});
 const initialState = {
     title: "",
     level: "BEGINNER",
     topic: "JAVA_CORE",
-    question: [{
-        content: "",
-        correctAnswer: "",
-        wrongAnswer1: "",
-        wrongAnswer2: "",
-        wrongAnswer3: ""
-    }]
+    question: [createEmptyQuestion()]
 
 };
 export default function AdminPage() {
@@ -77,7 +78,6 @@ export default function AdminPage() {
         const updateQuestions = [...quiz.question];
         updateQuestions[index] = { ...updateQuestions[index], [field]: value };
 
-
         setQuiz(prev => ({
             ...prev,
             question: updateQuestions
@@ -85,16 +85,50 @@ export default function AdminPage() {
 
         }));
     };
+
+    const handleOptionChange = (qIndex, oIndex, field, value) => {
+        const updated = [...quiz.question];
+
+        const options = [...updated[qIndex].optionAnswerSet];
+
+        options[oIndex] = {
+            ...options[oIndex],
+            [field]: value
+        };
+
+        updated[qIndex] = {
+            ...updated[qIndex],
+            optionAnswerSet: options
+        };
+
+        setQuiz(prev => ({
+            ...prev,
+            question: updated
+        }));
+    };
+    
+    const handleCorrectChange = (qIndex, oIndex) => {
+        const updated = [...quiz.question];
+
+        updated[qIndex].optionAnswerSet = updated[qIndex].optionAnswerSet.map(
+            (opt, i) => ({
+                ...opt,
+                correct: i === oIndex
+            })
+        );
+
+        setQuiz(prev => ({
+            ...prev,
+            question: updated
+        }));
+    };
+
+
+
     const addQuestionField = () => {
         setQuiz(prev => ({
             ...prev,
-            question: [...prev.question, {
-                content: "",
-                correctAnswer: "",
-                wrongAnswer1: "",
-                wrongAnswer2: "",
-                wrongAnswer3: ""
-            }]
+            question: [...prev.question, createEmptyQuestion()]
         }));
     };
 
@@ -103,7 +137,7 @@ export default function AdminPage() {
 
         const questionToRemove = quiz.question[index];
 
-        try {
+        try {   
             if (questionToRemove.id) {
                 await deleteQuestion(questionToRemove.id);
             }
@@ -181,8 +215,8 @@ export default function AdminPage() {
                 question: quiz.question
             });
         setIsQuizOpen(true)
-
     }
+    
     const deleteQuizzes = async (id) => {
         if (window.confirm("Վստահ եք որ ուզում եք ջնջել այս քուիզը")) {
             try {
@@ -202,7 +236,7 @@ export default function AdminPage() {
                 });
             }
         }
-    }
+    }   
 
     const logOut = async (e) => {
         try {
@@ -338,43 +372,30 @@ export default function AdminPage() {
                                                             </div>
 
                                                             <div className="space-y-2">
-                                                                <Label>Ճիշտ պատասխանը</Label>
-                                                                <Input
-                                                                    placeholder="Մուտքագրեք ճիշտ պատասխանը"
-                                                                    value={q.correctAnswer}
-                                                                    onChange={(e) => handleQuestionDetailChange(index, "correctAnswer", e.target.value)}
-                                                                    required
-                                                                />
-                                                            </div>
-                                                            <div className="space-y-2">
-                                                                <Label>Սխալ պատասխանը</Label>
-                                                                <Input
-                                                                    placeholder="Մուտքագրեք սխալ պատասխանը"
-                                                                    value={q.wrongAnswer1}
-                                                                    onChange={(e) => handleQuestionDetailChange(index, "wrongAnswer1", e.target.value)}
-                                                                    required
-                                                                />
+                                                                <Label>Պատասխաններ</Label>
+
+                                                                {q.optionAnswerSet.map((opt, oIndex) => (
+                                                                    <div key={oIndex} className="flex items-center gap-2">
+
+                                                                        <Input
+                                                                            placeholder="Պատասխան"
+                                                                            value={opt.text}
+                                                                            onChange={(e) =>
+                                                                                handleOptionChange(index, oIndex, "text", e.target.value)
+                                                                            }
+                                                                        />
+
+                                                                        <input
+                                                                            type="radio"
+                                                                            name={`correct-${index}`}
+                                                                            checked={opt.correct}
+                                                                            onChange={() => handleCorrectChange(index, oIndex)}
+                                                                        />
+
+                                                                    </div>
+                                                                ))}
                                                             </div>
 
-                                                            <div className="space-y-2">
-                                                                <Label>Սխալ պատասխանը</Label>
-                                                                <Input
-                                                                    placeholder="Մուտքագրեք սխալ պատասխանը"
-                                                                    value={q.wrongAnswer2}
-                                                                    onChange={(e) => handleQuestionDetailChange(index, "wrongAnswer2", e.target.value)}
-                                                                    required
-                                                                />
-                                                            </div>
-
-                                                            <div className="space-y-2">
-                                                                <Label>Սխալ պատասխանը</Label>
-                                                                <Input
-                                                                    placeholder="Մուտքագրեք սխալ պատասխանը"
-                                                                    value={q.wrongAnswer3}
-                                                                    onChange={(e) => handleQuestionDetailChange(index, "wrongAnswer3", e.target.value)}
-                                                                    required
-                                                                />
-                                                            </div>
                                                         </div>
                                                     ))}
                                                 </div></div>

@@ -7,7 +7,6 @@ import UserQuizPage from "./pages/UserQuizPage";
 import AdminPage from "./pages/AdminPage";
 import Login from "./pages/Login"
 import { Switch, Route, Redirect } from "wouter";
-import { getAllQuizzes } from "./lib/storage";
 
 function Router() {
   const token = localStorage.getItem("jwt_token");
