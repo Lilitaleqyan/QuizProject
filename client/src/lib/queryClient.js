@@ -28,7 +28,7 @@ export const getQueryFn = ({ on401 }) => async ({ queryKey }) => {
   const token =localStorage.getItem("jwt_token")
   const url = `${API_URL}${queryKey[0]}`;
   const res = await fetch(url, {
-    headers: token?{ Authorization: `Bearer ${token}`} : {},
+   
      credentials: "include" });
 
   if (on401 === "returnNull" && res.status === 401) {
